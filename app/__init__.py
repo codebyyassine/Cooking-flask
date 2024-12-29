@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
@@ -36,6 +36,13 @@ def create_app():
     # Configure JWT
     app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-secret-key')  # Change in production
     app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+    
+    # Configure file uploads
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+    app.config['UPLOAD_FOLDER'] = os.path.join(os.getcwd(), 'uploads')
+    
+    # Ensure upload directory exists
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
     # Initialize extensions
     db.init_app(app)
@@ -60,5 +67,10 @@ def create_app():
     app.register_blueprint(comments_bp, url_prefix='/api/recipes')
     app.register_blueprint(favorites_bp, url_prefix='/api/user')
     app.register_blueprint(dietary_restrictions_bp, url_prefix='/api/dietary-restrictions')
+    
+    # Serve uploaded files in development
+    @app.route('/uploads/<path:filename>')
+    def serve_upload(filename):
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
     return app 

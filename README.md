@@ -36,13 +36,14 @@ A Flask-based REST API for managing recipes, users, and related features.
 #### Register User
 - **URL**: `/api/auth/register`
 - **Method**: `POST`
+- **Content-Type**: `multipart/form-data` or `application/json`
 - **Request Body**:
   ```json
   {
     "username": "string",
     "email": "string",
     "password": "string",
-    "profile_image": "string (optional)"
+    "profile_image": "file (optional)"
   }
   ```
 - **Validation Rules**:
@@ -61,7 +62,9 @@ A Flask-based REST API for managing recipes, users, and related features.
     - Must contain at least one number
   - Profile Image:
     - Optional
-    - Must be a valid URL starting with http:// or https://
+    - Must be an image file (PNG, JPG, JPEG, GIF)
+    - Maximum file size: 5MB
+    - Will be optimized and resized if necessary
 - **Response**: 
   ```json
   {
@@ -70,8 +73,30 @@ A Flask-based REST API for managing recipes, users, and related features.
       "user_id": "integer",
       "username": "string",
       "email": "string",
-      "profile_image": "string (optional)"
+      "profile_image": "string (URL)"
     }
+  }
+  ```
+
+#### Update Profile Image
+- **URL**: `/api/auth/user/me/profile-image`
+- **Method**: `POST`
+- **Content-Type**: `multipart/form-data`
+- **Authentication**: Required
+- **Request Body**:
+  ```
+  profile_image: file
+  ```
+- **Validation Rules**:
+  - Required
+  - Must be an image file (PNG, JPG, JPEG, GIF)
+  - Maximum file size: 5MB
+  - Will be optimized and resized if necessary
+- **Response**:
+  ```json
+  {
+    "message": "Profile image updated successfully",
+    "profile_image": "string (URL)"
   }
   ```
 
@@ -524,3 +549,30 @@ The application uses PostgreSQL with the following main tables:
 - Ratings
 - Comments
 - Favorites 
+
+## File Upload Configuration
+
+The application supports two methods for storing uploaded files:
+
+### Local Storage (Development)
+- Files are stored in the `uploads` directory
+- Served via `/uploads/<filename>` endpoint
+- Configure via environment variable: `USE_S3=false`
+
+### Amazon S3 Storage (Production)
+- Files are stored in an S3 bucket
+- Requires the following environment variables:
+  - `USE_S3=true`
+  - `AWS_ACCESS_KEY_ID`
+  - `AWS_SECRET_ACCESS_KEY`
+  - `AWS_REGION` (defaults to us-east-1)
+  - `AWS_S3_BUCKET`
+
+## Image Processing
+- Supported formats: PNG, JPG, JPEG, GIF
+- Maximum file size: 5MB
+- Images are automatically:
+  - Converted to JPEG format
+  - Resized if larger than 800x800 pixels
+  - Optimized for web delivery
+  - Quality set to 85% 

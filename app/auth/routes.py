@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from app.models import User
 from app import db
+from app.utils.upload import validate_image, get_uploader
 import re
 
 auth_bp = Blueprint('auth', __name__)
@@ -52,18 +53,17 @@ def validate_user_data(data, is_update=False):
         elif not re.search(r'\d', data['password']):
             errors.append("Password must contain at least one number")
     
-    # Validate profile_image
-    if 'profile_image' in data and data['profile_image'] is not None:
-        if not isinstance(data['profile_image'], str):
-            errors.append("Profile image must be a string URL")
-        elif not data['profile_image'].startswith(('http://', 'https://')):
-            errors.append("Profile image must be a valid URL starting with http:// or https://")
-    
     return errors
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    data = request.get_json()
+    if not request.is_json:
+        data = request.form.to_dict()
+        profile_image = request.files.get('profile_image')
+    else:
+        data = request.get_json()
+        profile_image = None
+    
     if not data:
         return jsonify({'error': 'No data provided'}), 400
     
@@ -79,10 +79,25 @@ def register():
     if User.query.filter_by(username=data['username']).first():
         return jsonify({'error': 'Username already taken'}), 400
     
+    # Handle profile image upload
+    profile_image_url = None
+    if profile_image:
+        # Validate image
+        image_errors = validate_image(profile_image)
+        if image_errors:
+            return jsonify({'error': 'Invalid image', 'details': image_errors}), 400
+            
+        try:
+            # Upload image
+            uploader = get_uploader()
+            profile_image_url = uploader.upload_file(profile_image)
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 400
+    
     user = User(
         username=data['username'],
         email=data['email'],
-        profile_image=data.get('profile_image')
+        profile_image=profile_image_url
     )
     user.set_password(data['password'])
     
@@ -196,3 +211,35 @@ def update_user(user_id):
             'profile_image': user.profile_image or None
         }
     }) 
+
+@auth_bp.route('/user/me/profile-image', methods=['POST'])
+@jwt_required()
+def update_profile_image():
+    if 'profile_image' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+        
+    profile_image = request.files['profile_image']
+    
+    # Validate image
+    image_errors = validate_image(profile_image)
+    if image_errors:
+        return jsonify({'error': 'Invalid image', 'details': image_errors}), 400
+        
+    try:
+        # Upload image
+        uploader = get_uploader()
+        profile_image_url = uploader.upload_file(profile_image)
+        
+        # Update user profile
+        current_user_id = get_jwt_identity()
+        user = User.query.get_or_404(current_user_id)
+        user.profile_image = profile_image_url
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Profile image updated successfully',
+            'profile_image': profile_image_url
+        })
+        
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400 

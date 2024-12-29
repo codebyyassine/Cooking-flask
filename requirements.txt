@@ -7,3 +7,6 @@ python-dotenv
 flask-cors
 werkzeug
 email-validator
+python-magic-bin
+boto3  # For S3 storage
+pillow  # For image processing
