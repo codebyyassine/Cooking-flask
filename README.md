@@ -34,7 +34,7 @@ A Flask-based REST API for managing recipes, users, and related features.
 ### Authentication
 
 #### Register User
-- **URL**: `/api/register`
+- **URL**: `/api/auth/register`
 - **Method**: `POST`
 - **Request Body**:
   ```json
@@ -53,13 +53,13 @@ A Flask-based REST API for managing recipes, users, and related features.
       "user_id": "integer",
       "username": "string",
       "email": "string",
-      "profile_image": "string or null"
+      "profile_image": "string (optional)"
     }
   }
   ```
 
 #### Login
-- **URL**: `/api/login`
+- **URL**: `/api/auth/login`
 - **Method**: `POST`
 - **Request Body**:
   ```json
@@ -72,18 +72,18 @@ A Flask-based REST API for managing recipes, users, and related features.
   ```json
   {
     "message": "Login successful",
-    "token": "string",
+    "token": "string (JWT token)",
     "user": {
       "user_id": "integer",
       "username": "string",
       "email": "string",
-      "profile_image": "string or null"
+      "profile_image": "string (optional)"
     }
   }
   ```
 
 #### Get Current User
-- **URL**: `/api/user/me`
+- **URL**: `/api/auth/user/me`
 - **Method**: `GET`
 - **Authentication**: Required
 - **Response**:
@@ -92,28 +92,14 @@ A Flask-based REST API for managing recipes, users, and related features.
     "user_id": "integer",
     "username": "string",
     "email": "string",
-    "profile_image": "string or null"
-  }
-  ```
-
-#### Get User Profile
-- **URL**: `/api/user/<user_id>`
-- **Method**: `GET`
-- **Authentication**: Required
-- **Response**:
-  ```json
-  {
-    "user_id": "integer",
-    "username": "string",
-    "email": "string",
-    "profile_image": "string or null"
+    "profile_image": "string (optional)"
   }
   ```
 
 #### Update User Profile
-- **URL**: `/api/user/<user_id>`
+- **URL**: `/api/auth/user/<user_id>`
 - **Method**: `PUT`
-- **Authentication**: Required (must be the same user)
+- **Authentication**: Required
 - **Request Body**:
   ```json
   {
@@ -131,20 +117,20 @@ A Flask-based REST API for managing recipes, users, and related features.
       "user_id": "integer",
       "username": "string",
       "email": "string",
-      "profile_image": "string or null"
+      "profile_image": "string (optional)"
     }
   }
   ```
 
-### Recipes
+### Recipe Management
 
 #### Get All Recipes
 - **URL**: `/api/recipes`
 - **Method**: `GET`
 - **Query Parameters**:
-  - `category` (integer, optional): Filter by category ID
-  - `dietary` (integer, optional): Filter by dietary restriction ID
-  - `search` (string, optional): Search in title and description
+  - `category=<category_id>`: Filter by category
+  - `dietary=<dietary_restriction_id>`: Filter by dietary restriction
+  - `search=<query>`: Search recipes by title or description
 - **Response**:
   ```json
   [
@@ -196,8 +182,8 @@ A Flask-based REST API for managing recipes, users, and related features.
     ],
     "average_rating": "float",
     "ratings_count": "integer",
-    "created_at": "datetime",
-    "updated_at": "datetime"
+    "created_at": "timestamp",
+    "updated_at": "timestamp"
   }
   ```
 
@@ -257,47 +243,39 @@ A Flask-based REST API for managing recipes, users, and related features.
   }
   ```
 
-### Categories
+### Comments
 
-#### Get All Categories
-- **URL**: `/api/categories`
-- **Method**: `GET`
+#### Add Comment
+- **URL**: `/api/recipes/<recipe_id>/comments`
+- **Method**: `POST`
+- **Authentication**: Required
+- **Request Body**:
+  ```json
+  {
+    "content": "string"
+  }
+  ```
 - **Response**:
   ```json
-  [
-    {
-      "category_id": "integer",
-      "name": "string"
-    }
-  ]
+  {
+    "message": "Comment submitted successfully"
+  }
   ```
 
-### Ingredients
-
-#### Get All Ingredients
-- **URL**: `/api/ingredients`
+#### Get Comments
+- **URL**: `/api/recipes/<recipe_id>/comments`
 - **Method**: `GET`
 - **Response**:
   ```json
   [
     {
-      "ingredient_id": "integer",
-      "name": "string"
-    }
-  ]
-  ```
-
-### Dietary Restrictions
-
-#### Get All Dietary Restrictions
-- **URL**: `/api/dietary-restrictions`
-- **Method**: `GET`
-- **Response**:
-  ```json
-  [
-    {
-      "dietary_restriction_id": "integer",
-      "name": "string"
+      "comment_id": "integer",
+      "user": {
+        "user_id": "integer",
+        "username": "string"
+      },
+      "content": "string",
+      "created_at": "timestamp"
     }
   ]
   ```
@@ -317,58 +295,19 @@ A Flask-based REST API for managing recipes, users, and related features.
 - **Response**:
   ```json
   {
-    "message": "Rating added successfully"
+    "message": "Rating submitted successfully"
   }
   ```
 
-#### Get Recipe Ratings
+#### Get Ratings
 - **URL**: `/api/recipes/<recipe_id>/ratings`
 - **Method**: `GET`
 - **Response**:
   ```json
-  [
-    {
-      "rating_id": "integer",
-      "user_id": "integer",
-      "rating": "integer",
-      "created_at": "datetime"
-    }
-  ]
-  ```
-
-### Comments
-
-#### Add Comment
-- **URL**: `/api/recipes/<recipe_id>/comments`
-- **Method**: `POST`
-- **Authentication**: Required
-- **Request Body**:
-  ```json
   {
-    "content": "string"
+    "average_rating": "float",
+    "number_of_ratings": "integer"
   }
-  ```
-- **Response**:
-  ```json
-  {
-    "message": "Comment added successfully"
-  }
-  ```
-
-#### Get Recipe Comments
-- **URL**: `/api/recipes/<recipe_id>/comments`
-- **Method**: `GET`
-- **Response**:
-  ```json
-  [
-    {
-      "comment_id": "integer",
-      "user_id": "integer",
-      "content": "string",
-      "created_at": "datetime",
-      "username": "string"
-    }
-  ]
   ```
 
 ### Favorites
@@ -380,13 +319,14 @@ A Flask-based REST API for managing recipes, users, and related features.
 - **Response**:
   ```json
   {
-    "message": "Recipe added to favorites"
+    "message": "Recipe favorited successfully"
   }
   ```
 
 #### Get User's Favorites
-- **URL**: `/api/user/<user_id>/favorites`
+- **URL**: `/api/user/me/favorites`
 - **Method**: `GET`
+- **Authentication**: Required
 - **Response**:
   ```json
   [
@@ -399,44 +339,59 @@ A Flask-based REST API for managing recipes, users, and related features.
   ]
   ```
 
-## Authentication
+### Categories
+- **URL**: `/api/categories`
+- **Method**: `GET`
+- **Response**:
+  ```json
+  [
+    {
+      "category_id": "integer",
+      "name": "string"
+    }
+  ]
+  ```
 
-All endpoints marked with "Authentication: Required" need a JWT token in the Authorization header:
-```
-Authorization: Bearer <access_token>
-```
+### Ingredients
+- **URL**: `/api/ingredients`
+- **Method**: `GET`
+- **Response**:
+  ```json
+  [
+    {
+      "ingredient_id": "integer",
+      "name": "string"
+    }
+  ]
+  ```
+
+### Dietary Restrictions
+- **URL**: `/api/dietary-restrictions`
+- **Method**: `GET`
+- **Response**:
+  ```json
+  [
+    {
+      "dietary_restriction_id": "integer",
+      "name": "string"
+    }
+  ]
+  ```
 
 ## Error Responses
 
-All endpoints may return the following error responses:
+All error responses follow this format:
+```json
+{
+  "error": "Error message describing the issue"
+}
+```
 
-- **400 Bad Request**:
-  ```json
-  {
-    "error": "Error message describing the issue"
-  }
-  ```
-
-- **401 Unauthorized**:
-  ```json
-  {
-    "error": "Invalid credentials"
-  }
-  ```
-
-- **403 Forbidden**:
-  ```json
-  {
-    "error": "Unauthorized"
-  }
-  ```
-
-- **404 Not Found**:
-  ```json
-  {
-    "error": "Resource not found"
-  }
-  ```
+Common HTTP status codes:
+- **400 Bad Request**: Invalid input data
+- **401 Unauthorized**: Missing or invalid authentication
+- **403 Forbidden**: Insufficient permissions
+- **404 Not Found**: Resource not found
 
 ## Database Schema
 
@@ -450,6 +405,4 @@ The application uses PostgreSQL with the following main tables:
 - Recipe_Dietary_Restrictions
 - Ratings
 - Comments
-- Favorites
-
-For detailed schema information, see `backend/db.sql`. 
+- Favorites 

@@ -5,10 +5,13 @@ from app import db
 
 comments_bp = Blueprint('comments', __name__)
 
-@comments_bp.route('/recipes/<int:recipe_id>/comments', methods=['POST'])
+@comments_bp.route('/<int:recipe_id>/comments', methods=['POST'])
 @jwt_required()
 def add_comment(recipe_id):
     data = request.get_json()
+    if not data.get('content'):
+        return jsonify({'error': 'Comment content is required'}), 400
+        
     comment = Comment(
         user_id=get_jwt_identity(),
         recipe_id=recipe_id,
@@ -16,15 +19,17 @@ def add_comment(recipe_id):
     )
     db.session.add(comment)
     db.session.commit()
-    return jsonify({'message': 'Comment added successfully'})
+    return jsonify({'message': 'Comment submitted successfully'})
 
-@comments_bp.route('/recipes/<int:recipe_id>/comments', methods=['GET'])
+@comments_bp.route('/<int:recipe_id>/comments', methods=['GET'])
 def get_comments(recipe_id):
     comments = Comment.query.filter_by(recipe_id=recipe_id).all()
     return jsonify([{
         'comment_id': c.comment_id,
-        'user_id': c.user_id,
+        'user': {
+            'user_id': c.user.user_id,
+            'username': c.user.username
+        },
         'content': c.content,
-        'created_at': c.created_at,
-        'username': c.user.username
+        'created_at': c.created_at
     } for c in comments]) 

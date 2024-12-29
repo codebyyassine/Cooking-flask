@@ -21,8 +21,8 @@ def create_app():
     CORS(app, 
          resources={r"/api/*": {
              "origins": ["http://localhost:5173", "http://localhost:3000"],
-             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-             "allow_headers": ["Content-Type", "Authorization"],
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+             "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Credentials"],
              "supports_credentials": True,
              "send_wildcard": False,
              "expose_headers": ["Content-Range", "X-Content-Range"],
@@ -52,13 +52,13 @@ def create_app():
     from .favorites.routes import favorites_bp
     from .dietary_restrictions.routes import dietary_restrictions_bp
 
-    app.register_blueprint(auth_bp, url_prefix='/api')
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(recipes_bp, url_prefix='/api/recipes')
     app.register_blueprint(categories_bp, url_prefix='/api/categories')
     app.register_blueprint(ingredients_bp, url_prefix='/api/ingredients')
-    app.register_blueprint(ratings_bp, url_prefix='/api')
-    app.register_blueprint(comments_bp, url_prefix='/api')
-    app.register_blueprint(favorites_bp, url_prefix='/api')
+    app.register_blueprint(ratings_bp, url_prefix='/api/recipes')
+    app.register_blueprint(comments_bp, url_prefix='/api/recipes')
+    app.register_blueprint(favorites_bp, url_prefix='/api/user')
     app.register_blueprint(dietary_restrictions_bp, url_prefix='/api/dietary-restrictions')
 
     return app 

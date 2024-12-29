@@ -5,25 +5,45 @@ from app import db
 
 ratings_bp = Blueprint('ratings', __name__)
 
-@ratings_bp.route('/recipes/<int:recipe_id>/ratings', methods=['POST'])
+@ratings_bp.route('/<int:recipe_id>/ratings', methods=['POST'])
 @jwt_required()
 def add_rating(recipe_id):
     data = request.get_json()
-    rating = Rating(
+    if not isinstance(data.get('rating'), int) or not 1 <= data['rating'] <= 5:
+        return jsonify({'error': 'Rating must be an integer between 1 and 5'}), 400
+        
+    # Check if user already rated this recipe
+    existing_rating = Rating.query.filter_by(
         user_id=get_jwt_identity(),
-        recipe_id=recipe_id,
-        rating=data['rating']
-    )
-    db.session.add(rating)
+        recipe_id=recipe_id
+    ).first()
+    
+    if existing_rating:
+        existing_rating.rating = data['rating']
+    else:
+        rating = Rating(
+            user_id=get_jwt_identity(),
+            recipe_id=recipe_id,
+            rating=data['rating']
+        )
+        db.session.add(rating)
+    
     db.session.commit()
-    return jsonify({'message': 'Rating added successfully'})
+    return jsonify({'message': 'Rating submitted successfully'})
 
-@ratings_bp.route('/recipes/<int:recipe_id>/ratings', methods=['GET'])
+@ratings_bp.route('/<int:recipe_id>/ratings', methods=['GET'])
 def get_ratings(recipe_id):
     ratings = Rating.query.filter_by(recipe_id=recipe_id).all()
-    return jsonify([{
-        'rating_id': r.rating_id,
-        'user_id': r.user_id,
-        'rating': r.rating,
-        'created_at': r.created_at
-    } for r in ratings]) 
+    if not ratings:
+        return jsonify({
+            'average_rating': 0,
+            'number_of_ratings': 0
+        })
+    
+    total_ratings = len(ratings)
+    average_rating = sum(r.rating for r in ratings) / total_ratings
+    
+    return jsonify({
+        'average_rating': round(average_rating, 1),
+        'number_of_ratings': total_ratings
+    }) 
