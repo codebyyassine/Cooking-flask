@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: cooking_half_db
+    environment:
+      POSTGRES_DB: cooking_half
+      POSTGRES_USER: cooking_user
+      POSTGRES_PASSWORD: cooking_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/db.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - cooking_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cooking_user -d cooking_half"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: cooking_half_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - cooking_network
+
+volumes:
+  postgres_data:
+    name: cooking_half_postgres_data
+
+networks:
+  cooking_network:
+    name: cooking_half_network 
