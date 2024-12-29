@@ -61,4 +61,8 @@ def create_app():
     app.register_blueprint(favorites_bp, url_prefix='/api')
     app.register_blueprint(dietary_restrictions_bp, url_prefix='/api/dietary-restrictions')
 
+    @app.route('/')
+    def home():
+        return "Welcome to the Cooking Flask App!"
+
     return app 

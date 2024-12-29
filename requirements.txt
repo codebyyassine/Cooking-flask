@@ -6,4 +6,5 @@ psycopg2-binary
 python-dotenv
 flask-cors
 werkzeug
+pytest
 email-validator
