@@ -62,9 +62,13 @@ def login():
         
     return jsonify({'error': 'Invalid email or password'}), 401
 
+import logging
+
 @auth_bp.route('/user/me', methods=['GET'])
 @jwt_required()
 def get_current_user():
+    logging.info(f"Request headers: {request.headers}")
+    logging.info(f"Request data: {request.get_json()}")
     current_user_id = get_jwt_identity()
     user = User.query.get_or_404(current_user_id)
     return jsonify({
@@ -77,6 +81,8 @@ def get_current_user():
 @auth_bp.route('/user/<int:user_id>', methods=['GET'])
 @jwt_required()
 def get_user(user_id):
+    logging.info(f"Request headers: {request.headers}")
+    logging.info(f"Request data: {request.get_json()}")
     user = User.query.get_or_404(user_id)
     return jsonify({
         'user_id': user.user_id,
@@ -88,11 +94,16 @@ def get_user(user_id):
 @auth_bp.route('/user/<int:user_id>', methods=['PUT'])
 @jwt_required()
 def update_user(user_id):
+    logging.info(f"Request headers: {request.headers}")
+    logging.info(f"Request data: {request.get_json()}")
     if user_id != get_jwt_identity():
         return jsonify({'error': 'Unauthorized'}), 403
         
     user = User.query.get_or_404(user_id)
     data = request.get_json()
+    
+    if 'subject' in data:
+        return jsonify({'error': 'Subject field is not allowed'}), 400
     
     if 'username' in data:
         if User.query.filter(User.user_id != user_id, User.username == data['username']).first():
