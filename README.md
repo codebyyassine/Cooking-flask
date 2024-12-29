@@ -45,6 +45,23 @@ A Flask-based REST API for managing recipes, users, and related features.
     "profile_image": "string (optional)"
   }
   ```
+- **Validation Rules**:
+  - Username:
+    - Required
+    - 3-50 characters long
+    - Can only contain letters, numbers, and underscores
+  - Email:
+    - Required
+    - Must be a valid email format
+  - Password:
+    - Required
+    - Minimum 8 characters
+    - Must contain at least one uppercase letter
+    - Must contain at least one lowercase letter
+    - Must contain at least one number
+  - Profile Image:
+    - Optional
+    - Must be a valid URL starting with http:// or https://
 - **Response**: 
   ```json
   {
@@ -68,6 +85,9 @@ A Flask-based REST API for managing recipes, users, and related features.
     "password": "string"
   }
   ```
+- **Validation Rules**:
+  - Email and password are required
+  - Both must be strings
 - **Response**:
   ```json
   {
@@ -212,6 +232,37 @@ A Flask-based REST API for managing recipes, users, and related features.
     "dietary_restrictions": ["integer"]
   }
   ```
+- **Validation Rules**:
+  - Title:
+    - Required
+    - String
+    - Maximum 200 characters
+  - Description:
+    - Required
+    - String
+  - Instructions:
+    - Required
+    - String
+  - Category ID:
+    - Required
+    - Integer
+  - Prep Time:
+    - Optional
+    - Non-negative integer
+  - Cook Time:
+    - Optional
+    - Non-negative integer
+  - Servings:
+    - Optional
+    - Positive integer
+  - Ingredients:
+    - Must be a list of objects
+    - Each ingredient must have:
+      - ingredient_id (integer)
+      - quantity (positive number)
+      - unit (string)
+  - Dietary Restrictions:
+    - Must be a list of integers
 - **Response**:
   ```json
   {
@@ -255,6 +306,12 @@ A Flask-based REST API for managing recipes, users, and related features.
     "content": "string"
   }
   ```
+- **Validation Rules**:
+  - Content:
+    - Required
+    - Must be a string
+    - Cannot be empty
+    - Maximum 1000 characters
 - **Response**:
   ```json
   {
@@ -292,10 +349,22 @@ A Flask-based REST API for managing recipes, users, and related features.
     "rating": "integer (1-5)"
   }
   ```
+- **Validation Rules**:
+  - Rating:
+    - Required
+    - Must be an integer
+    - Must be between 1 and 5
+  - Only one rating per user per recipe (subsequent ratings update the existing one)
 - **Response**:
   ```json
   {
     "message": "Rating submitted successfully"
+  }
+  ```
+  or
+  ```json
+  {
+    "message": "Rating updated successfully"
   }
   ```
 
@@ -316,10 +385,24 @@ A Flask-based REST API for managing recipes, users, and related features.
 - **URL**: `/api/recipes/<recipe_id>/favorites`
 - **Method**: `POST`
 - **Authentication**: Required
+- **Validation Rules**:
+  - Recipe must exist
+  - Cannot favorite the same recipe twice
 - **Response**:
   ```json
   {
     "message": "Recipe favorited successfully"
+  }
+  ```
+
+#### Remove from Favorites
+- **URL**: `/api/recipes/<recipe_id>/favorites`
+- **Method**: `DELETE`
+- **Authentication**: Required
+- **Response**:
+  ```json
+  {
+    "message": "Recipe removed from favorites"
   }
   ```
 
@@ -383,15 +466,50 @@ A Flask-based REST API for managing recipes, users, and related features.
 All error responses follow this format:
 ```json
 {
-  "error": "Error message describing the issue"
+  "error": "Error message describing the issue",
+  "details": [
+    "List of specific validation errors (when applicable)"
+  ]
 }
 ```
 
 Common HTTP status codes:
-- **400 Bad Request**: Invalid input data
+- **400 Bad Request**: Invalid input data or validation failure
+  - Missing required fields
+  - Invalid data types
+  - Value out of allowed range
+  - Duplicate entries (e.g., already favorited)
 - **401 Unauthorized**: Missing or invalid authentication
 - **403 Forbidden**: Insufficient permissions
 - **404 Not Found**: Resource not found
+  - Recipe not found
+  - Comment not found
+  - Favorite not found
+
+## Validation Rules Summary
+
+### User Data
+- Username: 3-50 characters, alphanumeric with underscores
+- Email: Valid email format
+- Password: 8+ characters, must include uppercase, lowercase, and number
+- Profile Image: Valid HTTP(S) URL
+
+### Recipe Data
+- Title: Max 200 characters
+- Numeric fields (prep_time, cook_time, servings): Non-negative integers
+- Ingredients: Must include valid ingredient_id, positive quantity, and unit
+- Dietary Restrictions: List of valid restriction IDs
+
+### Comment Data
+- Content: Required, non-empty string, max 1000 characters
+
+### Rating Data
+- Rating: Integer between 1 and 5
+- One rating per user per recipe
+
+### Favorite Data
+- One favorite per user per recipe
+- Recipe must exist to be favorited
 
 ## Database Schema
 
