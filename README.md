@@ -48,7 +48,13 @@ A Flask-based REST API for managing recipes, users, and related features.
 - **Response**: 
   ```json
   {
-    "message": "User registered successfully"
+    "message": "User registered successfully",
+    "user": {
+      "user_id": "integer",
+      "username": "string",
+      "email": "string",
+      "profile_image": "string or null"
+    }
   }
   ```
 
@@ -65,7 +71,28 @@ A Flask-based REST API for managing recipes, users, and related features.
 - **Response**:
   ```json
   {
-    "access_token": "string"
+    "message": "Login successful",
+    "token": "string",
+    "user": {
+      "user_id": "integer",
+      "username": "string",
+      "email": "string",
+      "profile_image": "string or null"
+    }
+  }
+  ```
+
+#### Get Current User
+- **URL**: `/api/user/me`
+- **Method**: `GET`
+- **Authentication**: Required
+- **Response**:
+  ```json
+  {
+    "user_id": "integer",
+    "username": "string",
+    "email": "string",
+    "profile_image": "string or null"
   }
   ```
 
@@ -79,15 +106,14 @@ A Flask-based REST API for managing recipes, users, and related features.
     "user_id": "integer",
     "username": "string",
     "email": "string",
-    "profile_image": "string",
-    "created_at": "datetime"
+    "profile_image": "string or null"
   }
   ```
 
 #### Update User Profile
 - **URL**: `/api/user/<user_id>`
 - **Method**: `PUT`
-- **Authentication**: Required
+- **Authentication**: Required (must be the same user)
 - **Request Body**:
   ```json
   {
@@ -100,7 +126,13 @@ A Flask-based REST API for managing recipes, users, and related features.
 - **Response**:
   ```json
   {
-    "message": "User updated successfully"
+    "message": "User updated successfully",
+    "user": {
+      "user_id": "integer",
+      "username": "string",
+      "email": "string",
+      "profile_image": "string or null"
+    }
   }
   ```
 

@@ -9,6 +9,9 @@ auth_bp = Blueprint('auth', __name__)
 def register():
     data = request.get_json()
     
+    if not all(key in data for key in ['username', 'email', 'password']):
+        return jsonify({'error': 'Missing required fields'}), 400
+    
     if User.query.filter_by(email=data['email']).first():
         return jsonify({'error': 'Email already registered'}), 400
     
@@ -25,26 +28,39 @@ def register():
     db.session.add(user)
     db.session.commit()
     
-    return jsonify({'message': 'User registered successfully'}), 201
+    return jsonify({
+        'message': 'User registered successfully',
+        'user': {
+            'user_id': user.user_id,
+            'username': user.username,
+            'email': user.email,
+            'profile_image': user.profile_image or None
+        }
+    }), 201
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
+    
+    if not all(key in data for key in ['email', 'password']):
+        return jsonify({'error': 'Missing required fields'}), 400
+    
     user = User.query.filter_by(email=data['email']).first()
     
     if user and user.check_password(data['password']):
         access_token = create_access_token(identity=user.user_id)
         return jsonify({
-            'access_token': access_token,
+            'message': 'Login successful',
+            'token': access_token,
             'user': {
                 'user_id': user.user_id,
                 'username': user.username,
                 'email': user.email,
-                'profile_image': user.profile_image
+                'profile_image': user.profile_image or None
             }
         }), 200
         
-    return jsonify({'error': 'Invalid credentials'}), 401
+    return jsonify({'error': 'Invalid email or password'}), 401
 
 @auth_bp.route('/user/me', methods=['GET'])
 @jwt_required()
@@ -55,24 +71,19 @@ def get_current_user():
         'user_id': user.user_id,
         'username': user.username,
         'email': user.email,
-        'profile_image': user.profile_image,
-        'created_at': user.created_at
+        'profile_image': user.profile_image or None
     })
 
 @auth_bp.route('/user/<int:user_id>', methods=['GET'])
 @jwt_required()
 def get_user(user_id):
-    try:
-        user = User.query.get_or_404(user_id)
-        return jsonify({
-            'user_id': user.user_id,
-            'username': user.username,
-            'email': user.email,
-            'profile_image': user.profile_image,
-            'created_at': user.created_at
-        })
-    except Exception as e:
-        return jsonify({'error': 'User not found'}), 404
+    user = User.query.get_or_404(user_id)
+    return jsonify({
+        'user_id': user.user_id,
+        'username': user.username,
+        'email': user.email,
+        'profile_image': user.profile_image or None
+    })
 
 @auth_bp.route('/user/<int:user_id>', methods=['PUT'])
 @jwt_required()
@@ -84,8 +95,12 @@ def update_user(user_id):
     data = request.get_json()
     
     if 'username' in data:
+        if User.query.filter(User.user_id != user_id, User.username == data['username']).first():
+            return jsonify({'error': 'Username already taken'}), 400
         user.username = data['username']
     if 'email' in data:
+        if User.query.filter(User.user_id != user_id, User.email == data['email']).first():
+            return jsonify({'error': 'Email already registered'}), 400
         user.email = data['email']
     if 'profile_image' in data:
         user.profile_image = data['profile_image']
@@ -93,4 +108,13 @@ def update_user(user_id):
         user.set_password(data['password'])
         
     db.session.commit()
-    return jsonify({'message': 'User updated successfully'}) 
+    
+    return jsonify({
+        'message': 'User updated successfully',
+        'user': {
+            'user_id': user.user_id,
+            'username': user.username,
+            'email': user.email,
+            'profile_image': user.profile_image or None
+        }
+    }) 
